@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -20,6 +21,9 @@ const loginURL = "/goform/login"
 const clientsURL = "/data/getConnectInfo.asp"
 
 const postContentType = "application/x-www-form-urlencoded"
+
+const user = ""
+const pwd = ""
 
 type clientsTable []struct {
 	Bold        int    `json:"bold"`
@@ -38,11 +42,11 @@ func main() {
 	cookieJar, _ := cookiejar.New(nil)
 
 	client := &http.Client{
-		Jar: cookieJar,
+		Jar:     cookieJar,
 		Timeout: 5 * time.Second,
 	}
 
-	loginResp, err := client.Post(router + loginURL, postContentType, bytes.NewBufferString(fmt.Sprintf("user=%s&pwd=%s&rememberMe=1&pwdCookieFlag=1", user, pwd)))
+	loginResp, err := client.Post(router+loginURL, postContentType, bytes.NewBufferString(fmt.Sprintf("user=%s&pwd=%s&rememberMe=1&pwdCookieFlag=1", user, pwd)))
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +55,7 @@ func main() {
 		return
 	}
 	go loginResp.Body.Close()
-	
+
 	clientsResp, err := client.Get(router + clientsURL)
 	if err != nil {
 		panic(err)
@@ -81,6 +85,10 @@ func convert(clients clientsTable) [][]string {
 	for i, client := range clients {
 		output[i] = []string{strconv.Itoa(client.ID), client.HostName, client.IPAddr, client.Interface, client.Online}
 	}
+
+	sort.Slice(output, func(i, j int) bool {
+		return output[i][1] > output[j][1]
+	})
 	return output
 }
 
